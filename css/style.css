@@ -158,15 +158,16 @@ input {
 .nav-desktop {
   display: flex;
   align-items: center;
-  gap: 2rem;
+  gap: clamp(0.95rem, 1.6vw, 1.5rem);
 }
 
 .nav-link {
   position: relative;
   font-weight: 600;
-  font-size: 1rem;
+  font-size: 0.9375rem;
   color: var(--color-primary);
   padding-block: 0.35rem;
+  white-space: nowrap;
 }
 
 /* Sottolineatura fluida su hover */
