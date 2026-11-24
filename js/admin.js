@@ -7,7 +7,7 @@ import {
   db,
   isFirebaseConfigured,
 } from './firebase-config.js';
-import { formatItalianDate, normalizeImageUrl } from './utils.js';
+import { formatItalianDate, normalizeImageUrl, DEFAULT_PARKINGS } from './utils.js';
 
 import {
   signInWithEmailAndPassword,
@@ -127,6 +127,24 @@ function initEventForm() {
   const cancelBtn = document.getElementById('cancelEventEditBtn');
   const coverInput = document.getElementById('eventCoverUrl');
   const coverPreview = document.getElementById('coverPreviewImg');
+  const parkingsContainer = document.getElementById('eventParkingsCheckboxes');
+
+  // Popola la checklist dei parcheggi
+  if (parkingsContainer) {
+    parkingsContainer.innerHTML = '';
+    DEFAULT_PARKINGS.forEach((p) => {
+      const label = document.createElement('label');
+      label.className = 'parking-checkbox-item';
+      label.innerHTML = `
+        <input type="checkbox" name="eventParkings" value="${p.id}">
+        <span>
+          <strong>${p.name}</strong>
+          <small>${p.type}</small>
+        </span>
+      `;
+      parkingsContainer.appendChild(label);
+    });
+  }
 
   // Anteprima dinamica dell'immagine copertina
   coverInput.addEventListener('input', () => {
@@ -160,6 +178,10 @@ function initEventForm() {
       const description = document.getElementById('eventDescription').value.trim();
       const phone = document.getElementById('eventPhone').value.trim();
       const participationInfo = document.getElementById('eventParticipation').value.trim();
+      const parkings = Array.from(
+        document.querySelectorAll('input[name="eventParkings"]:checked')
+      ).map((cb) => cb.value);
+      const customParking = document.getElementById('eventCustomParking').value.trim();
 
       let mapsUrl = document.getElementById('eventMapsUrl').value.trim();
       if (!mapsUrl) {
@@ -182,6 +204,8 @@ function initEventForm() {
         mapsUrl,
         phone: phone || '',
         participationInfo: participationInfo || '',
+        parkings,
+        customParking,
         coverUrl,
         description,
       };
@@ -214,6 +238,10 @@ function resetEventForm() {
   document.getElementById('editingEventId').value = '';
   document.getElementById('eventPhone').value = '';
   document.getElementById('eventParticipation').value = '';
+  document.querySelectorAll('input[name="eventParkings"]').forEach((cb) => {
+    cb.checked = false;
+  });
+  document.getElementById('eventCustomParking').value = '';
   document.getElementById('eventPanelTitle').textContent = 'Pubblica Nuovo Evento';
   document.getElementById('eventSubmitBtn').querySelector('span').textContent = 'Pubblica Evento sul Sito';
   document.getElementById('cancelEventEditBtn').hidden = true;
@@ -280,6 +308,11 @@ async function loadEvents() {
       document.getElementById('eventMapsUrl').value = ev.mapsUrl || '';
       document.getElementById('eventPhone').value = ev.phone || '';
       document.getElementById('eventParticipation').value = ev.participationInfo || '';
+      const selectedParkings = Array.isArray(ev.parkings) ? ev.parkings : [];
+      document.querySelectorAll('input[name="eventParkings"]').forEach((cb) => {
+        cb.checked = selectedParkings.includes(cb.value);
+      });
+      document.getElementById('eventCustomParking').value = ev.customParking || '';
       document.getElementById('eventCoverUrl').value = ev.coverUrl || '';
       document.getElementById('eventDescription').value = ev.description || '';
 

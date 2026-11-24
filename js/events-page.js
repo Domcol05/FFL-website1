@@ -2,7 +2,12 @@
    FLEGREA FOOD LOVERS (FFL) — Logica Pagina Eventi e Galleria Lightbox
    ========================================================================== */
 
-import { formatItalianDate, downloadICSFile, initBackToTop } from './utils.js';
+import {
+  formatItalianDate,
+  initBackToTop,
+  openPosterLightbox,
+  openEventDetailsModal,
+} from './utils.js';
 import { db, isFirebaseConfigured } from './firebase-config.js';
 import {
   collection,
@@ -310,10 +315,15 @@ function renderUpcomingEvents(categoryFilter) {
 
     const media = document.createElement('div');
     media.className = 'event-card__media';
+    const coverUrl =
+      ev.coverUrl ||
+      'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?auto=format&fit=crop&w=900&q=80';
     const img = document.createElement('img');
-    img.src = ev.coverUrl || 'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?auto=format&fit=crop&w=900&q=80';
+    img.src = coverUrl;
     img.alt = ev.title;
     img.loading = 'lazy';
+    img.style.cursor = 'zoom-in';
+    img.addEventListener('click', () => openPosterLightbox(coverUrl, ev.title));
     media.appendChild(img);
 
     const body = document.createElement('div');
@@ -357,62 +367,13 @@ function renderUpcomingEvents(categoryFilter) {
     const actions = document.createElement('div');
     actions.className = 'event-card__actions';
 
-    const mapsLink = document.createElement('a');
-    mapsLink.href = ev.mapsUrl || `https://maps.google.com/?q=${encodeURIComponent(ev.location)}`;
-    mapsLink.target = '_blank';
-    mapsLink.rel = 'noopener noreferrer';
-    mapsLink.className = 'btn btn--secondary btn--sm';
-    mapsLink.textContent = 'Apri su Google Maps';
+    const detailsBtn = document.createElement('button');
+    detailsBtn.type = 'button';
+    detailsBtn.className = 'btn btn--primary btn--sm';
+    detailsBtn.textContent = 'Maggiori info';
+    detailsBtn.addEventListener('click', () => openEventDetailsModal(ev));
 
-    const calBtn = document.createElement('button');
-    calBtn.type = 'button';
-    calBtn.className = 'btn btn--primary btn--sm';
-    calBtn.textContent = 'Salva nel calendario';
-    calBtn.addEventListener('click', () => {
-      downloadICSFile({
-        title: `${ev.title} — FFL`,
-        start: ev.dateStart,
-        end: ev.dateEnd,
-        location: ev.location,
-        description: ev.description,
-      });
-    });
-
-    actions.append(mapsLink, calBtn);
-
-    // Chiamata telefonica diretta se presente numero
-    if (ev.phone) {
-      const cleanPhone = ev.phone.replace(/[^\d+]/g, '');
-      const telLink = document.createElement('a');
-      telLink.href = `tel:${cleanPhone}`;
-      telLink.className = 'btn btn--secondary btn--sm';
-      telLink.textContent = `Chiama: ${ev.phone}`;
-      actions.appendChild(telLink);
-    }
-
-    // Condivisione 1-Tap (Web Share API o WhatsApp)
-    const shareBtn = document.createElement('button');
-    shareBtn.type = 'button';
-    shareBtn.className = 'btn btn--secondary btn--sm';
-    shareBtn.textContent = 'Condividi';
-    shareBtn.addEventListener('click', async () => {
-      const shareData = {
-        title: ev.title,
-        text: `${ev.title} — ${ev.location}`,
-        url: window.location.href,
-      };
-      if (navigator.share && navigator.canShare && navigator.canShare(shareData)) {
-        try {
-          await navigator.share(shareData);
-        } catch (err) {
-          // Annullato
-        }
-      } else {
-        const waUrl = `https://wa.me/?text=${encodeURIComponent(`🍷 *${ev.title}*\n📍 ${ev.location}\n👉 ${window.location.href}`)}`;
-        window.open(waUrl, '_blank', 'noopener,noreferrer');
-      }
-    });
-    actions.appendChild(shareBtn);
+    actions.appendChild(detailsBtn);
     body.append(meta, title, loc, desc, actions);
     article.append(media, body);
     container.appendChild(article);

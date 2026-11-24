@@ -98,6 +98,332 @@ export function normalizeImageUrl(rawUrl) {
 }
 
 /**
+ * Elenco ufficiale dei parcheggi di Monte di Procida
+ */
+export const DEFAULT_PARKINGS = [
+  {
+    id: 'comune',
+    name: 'Parcheggio Comune di Monte di Procida',
+    type: 'Gratuito (Strisce bianche)',
+    badgeType: 'free',
+    details: 'Sosta gratuita su strisce bianche nei pressi della sede comunale.',
+    mapsUrl: 'https://maps.app.goo.gl/2vHzP7znwa1aXf8B7',
+    siteUrl: '',
+  },
+  {
+    id: 'il-faro',
+    name: 'Parcheggio Il Faro — Piazza XXVII Gennaio',
+    type: 'A pagamento (Custodito / Automatico)',
+    badgeType: 'paid',
+    details:
+      'Auto: € 1,00 prima ora, poi € 1,00 ogni 30 min (€ 20,00/giorno). Moto: € 1,00/ora o frazione (€ 5,00/giorno senza navetta, € 10,00/giorno con navetta). Cassa automatica con inserimento targa in caso di smarrimento ticket.',
+    mapsUrl: 'https://maps.google.com/?q=Parcheggio+Il+Faro+Piazza+XXVII+Gennaio+Monte+di+Procida',
+    siteUrl: 'https://www.ilfaromdp.it/',
+  },
+  {
+    id: 'pedecone',
+    name: 'Parcheggio Comunale Via Pedecone',
+    type: 'Strisce blu',
+    badgeType: 'blue',
+    details: 'Parcheggio comunale su strisce blu in Via Pedecone.',
+    mapsUrl: 'https://maps.app.goo.gl/z35QqDrRfApD6QHK9',
+    siteUrl: '',
+  },
+  {
+    id: 'parco-benessere',
+    name: 'Parcheggio Parco del Benessere',
+    type: 'Strisce blu',
+    badgeType: 'blue',
+    details: 'Area di sosta comunale su strisce blu presso il Parco del Benessere.',
+    mapsUrl: 'https://maps.app.goo.gl/753A9LRvVcw9MJW97',
+    siteUrl: '',
+  },
+  {
+    id: 'scialoia',
+    name: 'Parcheggio Comunale Via Scialoia',
+    type: 'Strisce blu',
+    badgeType: 'blue',
+    details: 'Parcheggio comunale su strisce blu in Via Scialoia.',
+    mapsUrl: 'https://maps.app.goo.gl/HM2E5fJ9d3ZRgxSN7',
+    siteUrl: '',
+  },
+  {
+    id: 'sant-antonio',
+    name: 'Parcheggio Comunale Sant’Antonio',
+    type: 'Strisce blu',
+    badgeType: 'blue',
+    details: 'Parcheggio comunale su strisce blu in zona Sant’Antonio.',
+    mapsUrl: 'https://maps.app.goo.gl/rReN5dWrZQuTWHG98',
+    siteUrl: '',
+  },
+  {
+    id: 'san-giuseppe',
+    name: 'Parcheggio Chiesa San Giuseppe',
+    type: 'Strisce blu',
+    badgeType: 'blue',
+    details: 'Parcheggio comunale su strisce blu nei pressi della Chiesa di San Giuseppe.',
+    mapsUrl: 'https://maps.app.goo.gl/YzByTey3pMpvga6R6',
+    siteUrl: '',
+  },
+];
+
+/**
+ * Apre la locandina a schermo intero (Poster Lightbox)
+ */
+export function openPosterLightbox(imageUrl, altText = 'Locandina evento') {
+  if (!imageUrl) return;
+
+  let lightbox = document.getElementById('posterLightbox');
+  if (!lightbox) {
+    lightbox = document.createElement('div');
+    lightbox.id = 'posterLightbox';
+    lightbox.className = 'poster-lightbox';
+    lightbox.setAttribute('role', 'dialog');
+    lightbox.setAttribute('aria-modal', 'true');
+    lightbox.setAttribute('aria-label', 'Ingrandimento locandina');
+
+    lightbox.innerHTML = `
+      <div class="poster-lightbox__backdrop"></div>
+      <button type="button" class="poster-lightbox__close" id="posterLightboxClose" aria-label="Chiudi locandina">
+        Chiudi &times;
+      </button>
+      <div class="poster-lightbox__dialog">
+        <img class="poster-lightbox__img" id="posterLightboxImg" src="" alt="">
+      </div>
+    `;
+
+    document.body.appendChild(lightbox);
+
+    const close = () => {
+      lightbox.classList.remove('is-open');
+      lightbox.hidden = true;
+      document.body.style.overflow = '';
+      document.removeEventListener('keydown', onKeyDown);
+    };
+
+    const onKeyDown = (e) => {
+      if (e.key === 'Escape') close();
+    };
+
+    lightbox.querySelector('#posterLightboxClose').addEventListener('click', close);
+    lightbox.querySelector('.poster-lightbox__backdrop').addEventListener('click', close);
+    lightbox._close = close;
+    lightbox._onKeyDown = onKeyDown;
+  }
+
+  const img = lightbox.querySelector('#posterLightboxImg');
+  img.src = imageUrl;
+  img.alt = altText;
+
+  lightbox.hidden = false;
+  requestAnimationFrame(() => lightbox.classList.add('is-open'));
+  document.body.style.overflow = 'hidden';
+  document.addEventListener('keydown', lightbox._onKeyDown);
+  lightbox.querySelector('#posterLightboxClose').focus();
+}
+
+/**
+ * Apre la modale dei dettagli completi dell'evento
+ */
+export function openEventDetailsModal(ev) {
+  if (!ev) return;
+
+  let modal = document.getElementById('eventDetailsModal');
+  if (!modal) {
+    modal = document.createElement('div');
+    modal.id = 'eventDetailsModal';
+    modal.className = 'event-modal';
+    modal.setAttribute('role', 'dialog');
+    modal.setAttribute('aria-modal', 'true');
+    modal.setAttribute('aria-label', 'Dettagli evento');
+
+    modal.innerHTML = `
+      <div class="event-modal__backdrop"></div>
+      <div class="event-modal__container">
+        <div class="event-modal__content" id="eventModalContent"></div>
+      </div>
+    `;
+
+    document.body.appendChild(modal);
+
+    const close = () => {
+      modal.classList.remove('is-open');
+      modal.hidden = true;
+      document.body.style.overflow = '';
+      document.removeEventListener('keydown', onKeyDown);
+    };
+
+    const onKeyDown = (e) => {
+      if (e.key === 'Escape') close();
+    };
+
+    modal.querySelector('.event-modal__backdrop').addEventListener('click', close);
+    modal._close = close;
+    modal._onKeyDown = onKeyDown;
+  }
+
+  const content = modal.querySelector('#eventModalContent');
+
+  // Determina parcheggi selezionati
+  const selectedParkings = [];
+  if (Array.isArray(ev.parkings)) {
+    ev.parkings.forEach((pId) => {
+      const match = DEFAULT_PARKINGS.find((p) => p.id === pId);
+      if (match) selectedParkings.push(match);
+    });
+  }
+
+  const hasParkingInfo = selectedParkings.length > 0 || Boolean(ev.customParking);
+
+  content.innerHTML = `
+    <button type="button" class="event-modal__close" id="eventModalClose" aria-label="Chiudi dettagli evento">&times;</button>
+    
+    <div class="event-modal__media-wrapper">
+      <img
+        src="${ev.coverUrl || 'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?auto=format&fit=crop&w=900&q=80'}"
+        alt="${ev.title}"
+        class="event-modal__media"
+        title="Clicca per ingrandire la locandina"
+      >
+      <span class="event-modal__zoom-hint">🔍 Clicca per ingrandire</span>
+    </div>
+
+    <div class="event-modal__body">
+      <div class="event-card__meta" style="margin-bottom: 0.65rem;">
+        <span class="event-badge">${ev.category || 'Evento'}</span>
+        ${
+          ev.participationInfo
+            ? `<span class="event-badge" style="background-color: var(--color-accent-light); color: var(--color-accent-hover);">${ev.participationInfo}</span>`
+            : ''
+        }
+      </div>
+
+      <h2 class="event-modal__title">${ev.title}</h2>
+
+      <div class="event-modal__info-list">
+        <div class="event-modal__info-item">
+          <span class="event-modal__info-label">📅 Data e ora:</span>
+          <strong>${formatItalianDate(ev.dateStart)}</strong>
+        </div>
+        <div class="event-modal__info-item">
+          <span class="event-modal__info-label">📍 Luogo:</span>
+          <span>${ev.location}</span>
+        </div>
+      </div>
+
+      <div class="event-modal__desc">
+        ${ev.description ? `<p>${ev.description.replace(/\n/g, '<br>')}</p>` : ''}
+      </div>
+
+      ${
+        hasParkingInfo
+          ? `
+        <div class="event-modal__parking-box">
+          <h3 class="event-modal__section-heading">🅿️ Dove parcheggiare per questo evento</h3>
+          ${
+            selectedParkings.length > 0
+              ? `
+            <ul class="event-modal__parking-list">
+              ${selectedParkings
+                .map(
+                  (p) => `
+                <li class="event-modal__parking-item">
+                  <div>
+                    <strong>${p.name}</strong>
+                    <span class="parking-badge parking-badge--${p.badgeType}">${p.type}</span>
+                    <p class="event-modal__parking-details">${p.details}</p>
+                  </div>
+                  <a href="${p.mapsUrl}" target="_blank" rel="noopener noreferrer" class="btn btn--secondary btn--xs" style="margin-top: 0.35rem;">
+                    <span>Apri Maps</span>
+                  </a>
+                </li>
+              `
+                )
+                .join('')}
+            </ul>
+          `
+              : ''
+          }
+          ${
+            ev.customParking
+              ? `
+            <p class="event-modal__custom-parking">
+              <strong>Info extra parcheggio:</strong> ${ev.customParking}
+            </p>
+          `
+              : ''
+          }
+        </div>
+      `
+          : ''
+      }
+
+      <div class="event-modal__actions">
+        <a href="${ev.mapsUrl || `https://maps.google.com/?q=${encodeURIComponent(ev.location)}`}" target="_blank" rel="noopener noreferrer" class="btn btn--secondary btn--sm">
+          <span>Apri su Google Maps</span>
+        </a>
+
+        ${
+          ev.phone
+            ? `
+          <a href="tel:${ev.phone.replace(/[^\d+]/g, '')}" class="btn btn--secondary btn--sm">
+            <span>Chiama: ${ev.phone}</span>
+          </a>
+        `
+            : ''
+        }
+
+        <button type="button" class="btn btn--primary btn--sm" id="modalCalBtn">
+          <span>Salva nel calendario</span>
+        </button>
+
+        <button type="button" class="btn btn--secondary btn--sm" id="modalShareBtn">
+          <span>Condividi</span>
+        </button>
+      </div>
+    </div>
+  `;
+
+  // Interazioni
+  content.querySelector('#eventModalClose').addEventListener('click', modal._close);
+  content.querySelector('.event-modal__media-wrapper').addEventListener('click', () => {
+    openPosterLightbox(ev.coverUrl, ev.title);
+  });
+
+  content.querySelector('#modalCalBtn').addEventListener('click', () => {
+    downloadICSFile({
+      title: `${ev.title} — FFL`,
+      start: ev.dateStart,
+      end: ev.dateEnd,
+      location: ev.location,
+      description: ev.description,
+    });
+  });
+
+  content.querySelector('#modalShareBtn').addEventListener('click', async () => {
+    const shareData = {
+      title: ev.title,
+      text: `${ev.title} — ${ev.location}`,
+      url: window.location.href,
+    };
+    if (navigator.share && navigator.canShare && navigator.canShare(shareData)) {
+      try {
+        await navigator.share(shareData);
+      } catch (err) {}
+    } else {
+      const waUrl = `https://wa.me/?text=${encodeURIComponent(`🍷 *${ev.title}*\n📍 ${ev.location}\n👉 ${window.location.href}`)}`;
+      window.open(waUrl, '_blank', 'noopener,noreferrer');
+    }
+  });
+
+  modal.hidden = false;
+  requestAnimationFrame(() => modal.classList.add('is-open'));
+  document.body.style.overflow = 'hidden';
+  document.addEventListener('keydown', modal._onKeyDown);
+  content.querySelector('#eventModalClose').focus();
+}
+
+/**
  * Inizializza il pulsante "Torna su" (Back to top) ad accesso rapido
  */
 export function initBackToTop() {
