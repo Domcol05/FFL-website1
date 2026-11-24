@@ -72,9 +72,52 @@ export function downloadICSFile({ title, start, end, location, description }) {
 }
 
 /**
- * Normalizza un URL immagine. Se è un link condiviso di Google Drive
- * (formati https://drive.google.com/file/d/FILE_ID/... oppure ?id=FILE_ID),
- * restituisce l'URL thumbnail ad alta risoluzione (https://drive.google.com/thumbnail?id=FILE_ID&sz=w1200).
+ * Estrae l'ID file da qualsiasi formato URL di Google Drive
+ * (/file/d/ID, ?id=ID, &id=ID, /d/ID).
+ */
+export function extractDriveFileId(rawUrl) {
+  if (!rawUrl || typeof rawUrl !== 'string') return '';
+  const url = rawUrl.trim();
+  if (!url) return '';
+
+  const fileIdMatch = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
+  if (fileIdMatch && fileIdMatch[1]) {
+    return fileIdMatch[1];
+  }
+
+  const queryIdMatch = url.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+  if (queryIdMatch && queryIdMatch[1]) {
+    return queryIdMatch[1];
+  }
+
+  const shortDMatch = url.match(/\/d\/([a-zA-Z0-9_-]+)/);
+  if (shortDMatch && shortDMatch[1]) {
+    return shortDMatch[1];
+  }
+
+  return '';
+}
+
+/**
+ * Restituisce l'URL per il download del file originale da Google Drive
+ * oppure l'URL originale invariato.
+ */
+export function getOriginalDownloadUrl(rawUrl) {
+  if (!rawUrl || typeof rawUrl !== 'string') return '';
+  const url = rawUrl.trim();
+  if (!url) return '';
+
+  const fileId = extractDriveFileId(url);
+  if (fileId) {
+    return `https://drive.google.com/uc?export=download&id=${fileId}`;
+  }
+
+  return url;
+}
+
+/**
+ * Normalizza un URL immagine. Se è un link condiviso di Google Drive,
+ * restituisce l'URL thumbnail ad alta risoluzione (https://drive.google.com/thumbnail?id=FILE_ID&sz=w1600).
  * Altrimenti restituisce l'URL originale invariato.
  */
 export function normalizeImageUrl(rawUrl) {
@@ -82,19 +125,42 @@ export function normalizeImageUrl(rawUrl) {
   const url = rawUrl.trim();
   if (!url) return '';
 
-  // Formato: /file/d/FILE_ID
-  const fileIdMatch = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
-  if (fileIdMatch && fileIdMatch[1]) {
-    return `https://drive.google.com/thumbnail?id=${fileIdMatch[1]}&sz=w1200`;
-  }
-
-  // Formato: ?id=FILE_ID oppure &id=FILE_ID
-  const queryIdMatch = url.match(/[?&]id=([a-zA-Z0-9_-]+)/);
-  if (queryIdMatch && queryIdMatch[1]) {
-    return `https://drive.google.com/thumbnail?id=${queryIdMatch[1]}&sz=w1200`;
+  const fileId = extractDriveFileId(url);
+  if (fileId) {
+    return `https://drive.google.com/thumbnail?id=${fileId}&sz=w1600`;
   }
 
   return url;
+}
+
+const LOCAL_IMAGE_FALLBACK = 'assets/img/logo-ffl.png';
+
+/**
+ * Collega una catena di fallback su un tag <img> prima di impostare src,
+ * così le immagini di Google Drive vengono caricate anche se un endpoint viene bloccato.
+ */
+export function attachImageFallback(imgEl, rawUrl) {
+  if (!imgEl) return;
+  const fileId = extractDriveFileId(rawUrl);
+  imgEl.dataset.fallbackStage = '0';
+  imgEl.onerror = () => {
+    const stage = Number(imgEl.dataset.fallbackStage || '0');
+    if (stage === 0 && fileId) {
+      imgEl.dataset.fallbackStage = '1';
+      imgEl.src = `https://lh3.googleusercontent.com/d/${fileId}=w1600`;
+      return;
+    }
+    if (stage === 1 && fileId) {
+      imgEl.dataset.fallbackStage = '2';
+      imgEl.src = `https://drive.google.com/uc?export=view&id=${fileId}`;
+      return;
+    }
+    if (stage < 3) {
+      imgEl.dataset.fallbackStage = '3';
+      imgEl.onerror = null;
+      imgEl.src = LOCAL_IMAGE_FALLBACK;
+    }
+  };
 }
 
 /**
@@ -168,7 +234,7 @@ export const DEFAULT_PARKINGS = [
 ];
 
 /**
- * Apre la locandina a schermo intero (Poster Lightbox)
+ * Apre la locandina o foto a schermo intero (Poster Lightbox) con download originale
  */
 export function openPosterLightbox(imageUrl, altText = 'Locandina evento') {
   if (!imageUrl) return;
@@ -180,13 +246,25 @@ export function openPosterLightbox(imageUrl, altText = 'Locandina evento') {
     lightbox.className = 'poster-lightbox';
     lightbox.setAttribute('role', 'dialog');
     lightbox.setAttribute('aria-modal', 'true');
-    lightbox.setAttribute('aria-label', 'Ingrandimento locandina');
+    lightbox.setAttribute('aria-label', 'Ingrandimento immagine');
 
     lightbox.innerHTML = `
       <div class="poster-lightbox__backdrop"></div>
-      <button type="button" class="poster-lightbox__close" id="posterLightboxClose" aria-label="Chiudi locandina">
-        Chiudi &times;
-      </button>
+      <div class="poster-lightbox__topbar">
+        <a
+          class="btn btn--primary btn--sm"
+          id="posterLightboxDownload"
+          href="#"
+          target="_blank"
+          rel="noopener noreferrer"
+          download
+        >
+          Scarica foto originale
+        </a>
+        <button type="button" class="poster-lightbox__close" id="posterLightboxClose" aria-label="Chiudi immagine">
+          Chiudi &times;
+        </button>
+      </div>
       <div class="poster-lightbox__dialog">
         <img class="poster-lightbox__img" id="posterLightboxImg" src="" alt="">
       </div>
@@ -212,8 +290,13 @@ export function openPosterLightbox(imageUrl, altText = 'Locandina evento') {
   }
 
   const img = lightbox.querySelector('#posterLightboxImg');
-  img.src = imageUrl;
+  const downloadBtn = lightbox.querySelector('#posterLightboxDownload');
+  attachImageFallback(img, imageUrl);
+  img.src = normalizeImageUrl(imageUrl);
   img.alt = altText;
+  if (downloadBtn) {
+    downloadBtn.href = getOriginalDownloadUrl(imageUrl);
+  }
 
   lightbox.hidden = false;
   requestAnimationFrame(() => lightbox.classList.add('is-open'));
@@ -274,18 +357,26 @@ export function openEventDetailsModal(ev) {
   }
 
   const hasParkingInfo = selectedParkings.length > 0 || Boolean(ev.customParking);
+  const rawCoverUrl =
+    ev.coverUrl && ev.coverUrl.trim()
+      ? ev.coverUrl.trim()
+      : 'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?auto=format&fit=crop&w=900&q=80';
+  const galleryItems = Array.isArray(ev.gallery)
+    ? ev.gallery.filter((item) => typeof item === 'string' && item.trim() !== '')
+    : [];
 
   content.innerHTML = `
     <button type="button" class="event-modal__close" id="eventModalClose" aria-label="Chiudi dettagli evento">&times;</button>
     
     <div class="event-modal__media-wrapper">
       <img
-        src="${ev.coverUrl || 'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?auto=format&fit=crop&w=900&q=80'}"
+        id="eventModalCoverImg"
+        src=""
         alt="${ev.title}"
         class="event-modal__media"
-        title="Clicca per ingrandire la locandina"
+        title="Clicca per ingrandire e scaricare la foto originale"
       >
-      <span class="event-modal__zoom-hint">🔍 Clicca per ingrandire</span>
+      <span class="event-modal__zoom-hint">Clicca per ingrandire o scaricare</span>
     </div>
 
     <div class="event-modal__body">
@@ -302,11 +393,11 @@ export function openEventDetailsModal(ev) {
 
       <div class="event-modal__info-list">
         <div class="event-modal__info-item">
-          <span class="event-modal__info-label">📅 Data e ora:</span>
+          <span class="event-modal__info-label">Data e ora:</span>
           <strong>${formatItalianDate(ev.dateStart)}</strong>
         </div>
         <div class="event-modal__info-item">
-          <span class="event-modal__info-label">📍 Luogo:</span>
+          <span class="event-modal__info-label">Luogo:</span>
           <span>${ev.location}</span>
         </div>
       </div>
@@ -319,7 +410,7 @@ export function openEventDetailsModal(ev) {
         hasParkingInfo
           ? `
         <div class="event-modal__parking-box">
-          <h3 class="event-modal__section-heading">🅿️ Dove parcheggiare per questo evento</h3>
+          <h3 class="event-modal__section-heading">Dove parcheggiare per questo evento</h3>
           ${
             selectedParkings.length > 0
               ? `
@@ -358,7 +449,47 @@ export function openEventDetailsModal(ev) {
           : ''
       }
 
+      ${
+        galleryItems.length > 0
+          ? `
+        <div class="event-modal__gallery">
+          <h3 class="event-modal__section-heading">Galleria foto dell'evento</h3>
+          <div class="event-modal__gallery-grid">
+            ${galleryItems
+              .map(
+                (photoUrl, index) => `
+              <button
+                type="button"
+                class="event-modal__gallery-item"
+                data-gallery-index="${index}"
+                aria-label="Apri foto ${index + 1} di ${ev.title}"
+              >
+                <img
+                  src=""
+                  alt="${ev.title} — Foto ${index + 1}"
+                  loading="lazy"
+                >
+              </button>
+            `
+              )
+              .join('')}
+          </div>
+        </div>
+      `
+          : ''
+      }
+
       <div class="event-modal__actions">
+        <a
+          href="${getOriginalDownloadUrl(rawCoverUrl)}"
+          target="_blank"
+          rel="noopener noreferrer"
+          download
+          class="btn btn--secondary btn--sm"
+        >
+          <span>Scarica locandina originale</span>
+        </a>
+
         <a href="${ev.mapsUrl || `https://maps.google.com/?q=${encodeURIComponent(ev.location)}`}" target="_blank" rel="noopener noreferrer" class="btn btn--secondary btn--sm">
           <span>Apri su Google Maps</span>
         </a>
@@ -384,10 +515,25 @@ export function openEventDetailsModal(ev) {
     </div>
   `;
 
-  // Interazioni
+  // Aggancia il gestore errori PRIMA di impostare src così nessun fallback viene saltato
+  const coverImgEl = content.querySelector('#eventModalCoverImg');
+  attachImageFallback(coverImgEl, rawCoverUrl);
+  coverImgEl.src = normalizeImageUrl(rawCoverUrl);
+
+  content.querySelectorAll('.event-modal__gallery-item').forEach((btn) => {
+    const idx = Number(btn.dataset.galleryIndex);
+    const rawPhotoUrl = galleryItems[idx];
+    const galleryImg = btn.querySelector('img');
+    attachImageFallback(galleryImg, rawPhotoUrl);
+    galleryImg.src = normalizeImageUrl(rawPhotoUrl);
+    btn.addEventListener('click', () => {
+      openPosterLightbox(rawPhotoUrl, `${ev.title} — Foto ${idx + 1}`);
+    });
+  });
+
   content.querySelector('#eventModalClose').addEventListener('click', modal._close);
   content.querySelector('.event-modal__media-wrapper').addEventListener('click', () => {
-    openPosterLightbox(ev.coverUrl, ev.title);
+    openPosterLightbox(rawCoverUrl, ev.title);
   });
 
   content.querySelector('#modalCalBtn').addEventListener('click', () => {
@@ -411,7 +557,7 @@ export function openEventDetailsModal(ev) {
         await navigator.share(shareData);
       } catch (err) {}
     } else {
-      const waUrl = `https://wa.me/?text=${encodeURIComponent(`🍷 *${ev.title}*\n📍 ${ev.location}\n👉 ${window.location.href}`)}`;
+      const waUrl = `https://wa.me/?text=${encodeURIComponent(`*${ev.title}*\nLuogo: ${ev.location}\n${window.location.href}`)}`;
       window.open(waUrl, '_blank', 'noopener,noreferrer');
     }
   });
@@ -447,13 +593,17 @@ export function initBackToTop() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   });
 
-  window.addEventListener('scroll', () => {
-    if (window.scrollY > 450) {
-      btn.hidden = false;
-    } else {
-      btn.hidden = true;
-    }
-  }, { passive: true });
+  window.addEventListener(
+    'scroll',
+    () => {
+      if (window.scrollY > 450) {
+        btn.hidden = false;
+      } else {
+        btn.hidden = true;
+      }
+    },
+    { passive: true }
+  );
 
   document.body.appendChild(btn);
 }

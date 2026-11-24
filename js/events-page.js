@@ -4,6 +4,9 @@
 
 import {
   formatItalianDate,
+  normalizeImageUrl,
+  getOriginalDownloadUrl,
+  attachImageFallback,
   initBackToTop,
   openPosterLightbox,
   openEventDetailsModal,
@@ -227,12 +230,10 @@ async function loadEventsFromFirestore() {
       }
     });
 
-    // Gli eventi passati vengono ordinati dal più recente al meno recente
     past.sort((a, b) => new Date(b.dateStart).getTime() - new Date(a.dateStart).getTime());
 
     activeUpcomingEvents = upcoming;
 
-    // Mappa gli eventi passati nel formato atteso dal renderer del Lightbox
     activePastEvents = past.map((ev) => {
       const d = new Date(ev.dateStart);
       const dateLabel = !Number.isNaN(d.getTime())
@@ -315,15 +316,17 @@ function renderUpcomingEvents(categoryFilter) {
 
     const media = document.createElement('div');
     media.className = 'event-card__media';
-    const coverUrl =
-      ev.coverUrl ||
-      'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?auto=format&fit=crop&w=900&q=80';
+    const rawCoverUrl =
+      ev.coverUrl && ev.coverUrl.trim()
+        ? ev.coverUrl.trim()
+        : 'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?auto=format&fit=crop&w=900&q=80';
     const img = document.createElement('img');
-    img.src = coverUrl;
+    attachImageFallback(img, rawCoverUrl);
+    img.src = normalizeImageUrl(rawCoverUrl);
     img.alt = ev.title;
     img.loading = 'lazy';
     img.style.cursor = 'zoom-in';
-    img.addEventListener('click', () => openPosterLightbox(coverUrl, ev.title));
+    img.addEventListener('click', () => openPosterLightbox(rawCoverUrl, ev.title));
     media.appendChild(img);
 
     const body = document.createElement('div');
@@ -445,7 +448,6 @@ function renderPastEvents() {
 
     header.append(meta, title, summary);
 
-    // Se ci sono foto nella galleria dell'evento passato, mostra la griglia di miniature
     if (photoCount > 0) {
       const grid = document.createElement('div');
       grid.className = 'past-gallery-grid';
@@ -457,7 +459,8 @@ function renderPastEvents() {
         thumbBtn.setAttribute('aria-label', `Apri fotografia ${idx + 1} di ${photoCount}: ${past.title}`);
 
         const img = document.createElement('img');
-        img.src = photo.url;
+        attachImageFallback(img, photo.url);
+        img.src = normalizeImageUrl(photo.url);
         img.alt = photo.alt || past.title;
         img.loading = 'lazy';
 
@@ -475,7 +478,7 @@ function renderPastEvents() {
   });
 }
 
-/* 7. Controlli Lightbox a Schermo Intero */
+/* 7. Controlli Lightbox a Schermo Intero (Archivio Foto) */
 function initLightbox() {
   const lightbox = document.getElementById('photoLightbox');
   const closeBtn = document.getElementById('lightboxClose');
@@ -485,16 +488,27 @@ function initLightbox() {
 
   if (!lightbox) return;
 
+  // Aggiunge il pulsante di download originale nella barra superiore del lightbox archivio
+  const topbar = lightbox.querySelector('.lightbox__topbar');
+  if (topbar && !document.getElementById('lightboxOriginalDownload')) {
+    const dlLink = document.createElement('a');
+    dlLink.id = 'lightboxOriginalDownload';
+    dlLink.className = 'btn btn--primary btn--sm';
+    dlLink.target = '_blank';
+    dlLink.rel = 'noopener noreferrer';
+    dlLink.setAttribute('download', '');
+    dlLink.textContent = 'Scarica foto originale';
+    topbar.insertBefore(dlLink, closeBtn);
+  }
+
   closeBtn.addEventListener('click', closeLightbox);
   prevBtn.addEventListener('click', () => stepLightbox(-1));
   nextBtn.addEventListener('click', () => stepLightbox(1));
 
-  // Chiude cliccando sullo sfondo scuro attorno all'immagine
   stage.addEventListener('click', (e) => {
     if (e.target === stage) closeLightbox();
   });
 
-  // Navigazione da tastiera
   document.addEventListener('keydown', (e) => {
     if (lightbox.hidden) return;
     if (e.key === 'Escape') closeLightbox();
@@ -536,10 +550,15 @@ function stepLightbox(delta) {
 function updateLightboxView() {
   const img = document.getElementById('lightboxImg');
   const counter = document.getElementById('lightboxCounter');
+  const dlLink = document.getElementById('lightboxOriginalDownload');
   const current = currentAlbum[currentPhotoIndex];
   if (!img || !counter || !current) return;
 
-  img.src = current.url;
+  attachImageFallback(img, current.url);
+  img.src = normalizeImageUrl(current.url);
   img.alt = current.alt;
   counter.textContent = `Foto ${currentPhotoIndex + 1} di ${currentAlbum.length}`;
+  if (dlLink) {
+    dlLink.href = getOriginalDownloadUrl(current.url);
+  }
 }

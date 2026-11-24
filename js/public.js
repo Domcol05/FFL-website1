@@ -6,6 +6,8 @@ import { db, isFirebaseConfigured } from './firebase-config.js';
 import {
   formatItalianDate,
   downloadICSFile,
+  normalizeImageUrl,
+  attachImageFallback,
   initBackToTop,
   openPosterLightbox,
   openEventDetailsModal,
@@ -32,7 +34,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   if (isFirebaseConfigured()) {
     await Promise.all([loadLiveNotices(), loadLiveUpcomingEvents()]);
   } else {
-    // Modalità anteprima locale con i dati già presenti nell'HTML
     const timerEl = document.getElementById('countdownTimer');
     if (timerEl) startCountdown(timerEl.getAttribute('data-target'));
   }
@@ -196,15 +197,17 @@ async function loadLiveUpcomingEvents() {
 
       const media = document.createElement('div');
       media.className = 'event-card__media';
-      const coverUrl =
-        ev.coverUrl ||
-        'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?auto=format&fit=crop&w=900&q=80';
+      const rawCoverUrl =
+        ev.coverUrl && ev.coverUrl.trim()
+          ? ev.coverUrl.trim()
+          : 'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?auto=format&fit=crop&w=900&q=80';
       const img = document.createElement('img');
-      img.src = coverUrl;
+      attachImageFallback(img, rawCoverUrl);
+      img.src = normalizeImageUrl(rawCoverUrl);
       img.alt = ev.title;
       img.loading = 'lazy';
       img.style.cursor = 'zoom-in';
-      img.addEventListener('click', () => openPosterLightbox(coverUrl, ev.title));
+      img.addEventListener('click', () => openPosterLightbox(rawCoverUrl, ev.title));
       media.appendChild(img);
 
       const body = document.createElement('div');
