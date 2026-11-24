@@ -1,0 +1,76 @@
+/* ==========================================================================
+   FLEGREA FOOD LOVERS (FFL) — Design Tokens & Palette
+   ========================================================================== */
+
+:root {
+    /* Colori estratti dal logo FFL */
+    --color-bg: #FAF6F0;
+    /* Panna caldo — superficie principale */
+    --color-surface: #FFFFFF;
+    /* Bianco puro — card e moduli */
+    --color-surface-alt: #F3ECE1;
+    /* Sabbia morbido — sezioni alternate */
+
+    --color-primary: #472235;
+    /* Bordeaux / Melanzana scuro — identità FFL */
+    --color-primary-hover: #351827;
+    /* Bordeaux intenso per hover */
+    --color-primary-light: #F6EFF2;
+    /* Tinta bordeaux chiarissima per badge */
+
+    --color-accent: #D96B14;
+    /* Arancio Terracotta — azioni principali & countdown */
+    --color-accent-hover: #B8560B;
+    /* Terracotta scuro per hover */
+    --color-accent-light: #FDF0E6;
+    /* Tinta terracotta tenue */
+
+    --color-whatsapp: #1F8B4C;
+    /* Verde WhatsApp ad alto contrasto (WCAG AA) */
+    --color-whatsapp-hover: #176D3B;
+
+    /* Testi e Bordi */
+    --color-text: #23111A;
+    /* Antracite caldo ad altissimo contrasto */
+    --color-text-muted: #5C4752;
+    /* Testo secondario leggibile */
+    --color-border: #E5DDD3;
+    /* Bordo sottile naturale */
+    --color-border-strong: #CFC3B4;
+
+    /* Tipografia */
+    --font-serif: 'Fraunces', Georgia, serif;
+    --font-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+
+    /* Scala tipografica generosa (ottimizzata per lettura agevole) */
+    --text-base: clamp(1.0625rem, 1vw + 0.85rem, 1.125rem);
+    /* 17px -> 18px */
+    --text-sm: 0.9375rem;
+    /* 15px */
+    --text-xs: 0.8125rem;
+    /* 13px */
+    --text-lg: 1.25rem;
+    /* 20px */
+    --text-h3: clamp(1.35rem, 1.8vw, 1.6rem);
+    --text-h2: clamp(1.9rem, 3vw, 2.5rem);
+    --text-h1: clamp(2.35rem, 4.2vw, 3.4rem);
+
+    /* Spaziature e Layout */
+    --container-max: 1160px;
+    --container-pad: clamp(1.25rem, 4vw, 2.5rem);
+    --section-pad: clamp(4.5rem, 8vw, 6.75rem);
+    --header-height: 82px;
+
+    /* Forme e Ombre */
+    --radius-sm: 6px;
+    --radius-md: 10px;
+    --radius-lg: 14px;
+    --shadow-card: 0 2px 10px rgba(35, 17, 26, 0.04);
+    --shadow-card-hover: 0 10px 24px rgba(71, 34, 53, 0.09);
+
+    /* Animazioni fluide */
+    --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+    --duration-fast: 180ms;
+    --duration-base: 320ms;
+    --duration-slow: 600ms;
+}

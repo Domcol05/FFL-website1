@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Area Direttivo — Flegrea Food Lovers (FFL)</title>
+  <meta name="robots" content="noindex, nofollow">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <link rel="icon" type="image/png" href="assets/img/logo-ffl.png">
+  <link rel="stylesheet" href="css/variables.css">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/admin.css">
+</head>
+<body>
+
+  <!-- HEADER AREA RISERVATA -->
+  <header class="admin-header">
+    <div class="wrap admin-header__inner">
+      <div class="admin-header__brand">
+        <img
+          src="assets/img/logo-ffl.png"
+          alt="Logo Flegrea Food Lovers"
+          class="brand__logo"
+          onerror="this.style.display='none'"
+        >
+        <div>
+          <span class="admin-header__title">Area Direttivo FFL</span>
+          <span class="admin-header__sub" id="adminUserLabel">Gestione Sito ed Eventi</span>
+        </div>
+      </div>
+
+      <div class="admin-header__actions">
+        <a href="index.html" class="btn btn--ghost-light btn--sm">Vai al sito pubblico</a>
+        <button type="button" class="btn btn--primary btn--sm" id="logoutBtn" hidden>Esci</button>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <!-- 1. SCHERMATA LOGIN -->
+    <section class="login-screen" id="loginSection">
+      <div class="wrap" style="display: flex; justify-content: center;">
+        <div class="login-card">
+          <h1 class="login-card__title">Accesso Direttivo</h1>
+          <p class="login-card__desc">
+            Inserisci le credenziali autorizzate dell'associazione per pubblicare eventi, avvisi e fotografie.
+          </p>
+
+          <form class="stack-form" id="loginForm" novalidate>
+            <div class="form-field">
+              <label for="loginEmail" class="form-label">Email autorizzata</label>
+              <input type="email" id="loginEmail" class="form-input" required autocomplete="username">
+            </div>
+
+            <div class="form-field">
+              <label for="loginPassword" class="form-label">Password</label>
+              <input type="password" id="loginPassword" class="form-input" required autocomplete="current-password">
+            </div>
+
+            <button type="submit" class="btn btn--primary" id="loginSubmitBtn">
+              <span>Accedi al pannello</span>
+            </button>
+
+            <div class="form-feedback" id="loginFeedback" role="alert"></div>
+          </form>
+        </div>
+      </div>
+    </section>
+
+    <!-- 2. DASHBOARD OPERATIVA (Visibile solo dopo il login) -->
+    <section class="admin-main" id="dashboardSection" hidden>
+      <div class="wrap">
+
+        <!-- Navigazione a 3 Schede -->
+        <div class="admin-tabs" role="tablist" aria-label="Sezioni di gestione">
+          <button type="button" class="admin-tab is-active" role="tab" aria-selected="true" data-tab="eventsTab">
+            1. Gestione Eventi e Foto
+          </button>
+          <button type="button" class="admin-tab" role="tab" aria-selected="false" data-tab="noticesTab">
+            2. Avvisi &amp; WhatsApp
+          </button>
+          <button type="button" class="admin-tab" role="tab" aria-selected="false" data-tab="subscribersTab">
+            3. Iscritti Email
+          </button>
+        </div>
+
+        <!-- SCHEDA 1: EVENTI E GALLERIE -->
+        <div id="eventsTab" class="tab-content">
+          <div class="admin-grid">
+            <!-- Form Creazione / Modifica Evento -->
+            <div class="admin-panel">
+              <h2 class="admin-panel__title" id="eventPanelTitle">Pubblica Nuovo Evento</h2>
+              <form class="stack-form" id="eventForm">
+                <input type="hidden" id="editingEventId">
+
+                <div class="form-field">
+                  <label for="eventTitle" class="form-label">Titolo dell'evento *</label>
+                  <input type="text" id="eventTitle" class="form-input" placeholder="Es. Serata della Cicerchia & Falanghina" required>
+                </div>
+
+                <div class="form-row-2">
+                  <div class="form-field">
+                    <label for="eventCategory" class="form-label">Tipologia *</label>
+                    <select id="eventCategory" class="form-select">
+                      <option value="Degustazione">Degustazione</option>
+                      <option value="Incontro">Incontro</option>
+                      <option value="Festa">Festa</option>
+                      <option value="Festa">Competizione</option>
+                    </select>
+                  </div>
+
+                  <div class="form-field">
+                    <label for="eventLocation" class="form-label">Luogo *</label>
+                    <input type="text" id="eventLocation" class="form-input" placeholder="Es. Belvedere di Monte di Procida" required>
+                  </div>
+                </div>
+
+                <div class="form-row-2">
+                  <div class="form-field">
+                    <label for="eventDateStart" class="form-label">Data e ora inizio *</label>
+                    <input type="datetime-local" id="eventDateStart" class="form-input" required>
+                  </div>
+
+                  <div class="form-field">
+                    <label for="eventDateEnd" class="form-label">Data e ora fine</label>
+                    <input type="datetime-local" id="eventDateEnd" class="form-input">
+                  </div>
+                </div>
+
+                <div class="form-field">
+                  <label for="eventMapsUrl" class="form-label">Link Google Maps</label>
+                  <input type="url" id="eventMapsUrl" class="form-input" placeholder="https://maps.google.com/?q=...">
+                  <span class="form-hint">Se lasciato vuoto verrà generato automaticamente dal nome del luogo.</span>
+                </div>
+
+                <div class="form-row-2">
+                  <div class="form-field">
+                    <label for="eventPhone" class="form-label">Telefono per info / prenotazioni (facoltativo)</label>
+                    <input type="tel" id="eventPhone" class="form-input" placeholder="Es. 333 123 4567">
+                    <span class="form-hint">Se inserito, sul sito apparirà il pulsante per chiamare direttamente con un tocco.</span>
+                  </div>
+
+                  <div class="form-field">
+                    <label for="eventParticipation" class="form-label">Ingresso / Quota (facoltativo)</label>
+                    <input type="text" id="eventParticipation" class="form-input" placeholder="Es. Ingresso libero oppure Contributo 15€">
+                    <span class="form-hint">Viene mostrato come badge in evidenza sulla scheda evento.</span>
+                  </div>
+                </div>
+
+                <div class="form-field">
+                  <label for="eventCoverUrl" class="form-label">Link Locandina / Foto Copertina (Google Drive o URL diretto)</label>
+                  <input type="url" id="eventCoverUrl" class="form-input" placeholder="https://drive.google.com/file/d/... oppure URL diretto">
+                  <span class="form-hint">Se usi Google Drive, assicurati che la condivisione del file sia impostata su "Chiunque abbia il link".</span>
+                  <img id="coverPreviewImg" class="cover-preview-img" alt="Anteprima copertina" hidden>
+                </div>
+
+                <div class="form-field">
+                  <label for="eventDescription" class="form-label">Programma e descrizione *</label>
+                  <textarea id="eventDescription" class="form-textarea" placeholder="Descrivi brevemente i piatti, i produttori ospiti e come partecipare..." required></textarea>
+                </div>
+
+                <div class="form-actions-row">
+                  <button type="submit" class="btn btn--primary" id="eventSubmitBtn">
+                    <span>Pubblica Evento sul Sito</span>
+                  </button>
+                  <button type="button" id="cancelEventEditBtn" class="btn btn--secondary" hidden>
+                    Annulla modifica
+                  </button>
+                </div>
+
+                <div class="form-feedback" id="eventFeedback" role="status"></div>
+              </form>
+            </div>
+
+            <!-- Elenco Eventi Esistenti -->
+            <div class="admin-panel">
+              <h2 class="admin-panel__title">Eventi Pubblicati &amp; Caricamento Foto</h2>
+              <p class="form-hint" style="margin-bottom: 1rem;">
+                Dopo un evento concluso, usa il tasto <strong>"Gestisci Foto"</strong> per visualizzare o caricare gli scatti della serata.
+              </p>
+              <div class="admin-items-list" id="adminEventsList">
+                <p>Caricamento eventi...</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- SCHEDA 2: AVVISI E CANALE WHATSAPP -->
+        <div id="noticesTab" class="tab-content" hidden>
+          <div class="admin-grid">
+            <div class="admin-panel">
+              <h2 class="admin-panel__title" id="noticePanelTitle">Nuovo Avviso o Comunicato</h2>
+              <form class="stack-form" id="noticeForm">
+                <input type="hidden" id="editingNoticeId">
+
+                <div class="form-field">
+                  <label for="noticeTitle" class="form-label">Titolo dell'avviso *</label>
+                  <input type="text" id="noticeTitle" class="form-input" placeholder="Es. Cambio orario per l'evento di sabato" required>
+                </div>
+
+                <div class="form-field">
+                  <label for="noticeMessage" class="form-label">Testo del messaggio *</label>
+                  <textarea id="noticeMessage" class="form-textarea" placeholder="Scrivi qui la comunicazione chiara per i soci e i cittadini..." required></textarea>
+                </div>
+
+                <label class="form-checkbox">
+                  <input type="checkbox" id="noticeIsUrgent">
+                  <span><strong>Avviso urgente:</strong> mostra anche nella barra bordeaux in cima a tutta la homepage.</span>
+                </label>
+
+                <div class="form-actions-row">
+                  <button type="submit" class="btn btn--primary" id="noticeSubmitBtn">
+                    <span>Pubblica Avviso</span>
+                  </button>
+                  <button type="button" id="cancelNoticeEditBtn" class="btn btn--secondary" hidden>
+                    Annulla modifica
+                  </button>
+                </div>
+
+                <div class="form-feedback" id="noticeFeedback" role="status"></div>
+              </form>
+            </div>
+
+            <div class="admin-panel">
+              <h2 class="admin-panel__title">Avvisi Attivi</h2>
+              <div class="admin-items-list" id="adminNoticesList">
+                <p>Caricamento avvisi...</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- SCHEDA 3: ISCRITTI NEWSLETTER EMAIL -->
+        <div id="subscribersTab" class="tab-content" hidden>
+          <!-- Aggiunta Manuale Iscritto -->
+          <div class="admin-panel" style="margin-bottom: 1.5rem;">
+            <h2 class="admin-panel__title" style="margin-bottom: 0.4rem;">Aggiungi Iscritto Manualmente</h2>
+            <p class="form-hint" style="margin-bottom: 1.15rem;">
+              Registra velocemente chi lascia il proprio contatto durante gli incontri o le degustazioni dal vivo.
+            </p>
+            <form class="manual-subscriber-form" id="manualSubscriberForm">
+              <div class="form-field" style="flex: 1.2;">
+                <label for="manualSubEmail" class="form-label">Email *</label>
+                <input type="email" id="manualSubEmail" class="form-input" placeholder="nome@esempio.it" required>
+              </div>
+              <div class="form-field" style="flex: 1;">
+                <label for="manualSubName" class="form-label">Nome (opzionale)</label>
+                <input type="text" id="manualSubName" class="form-input" placeholder="Mario Rossi">
+              </div>
+              <div class="form-field form-field--button">
+                <button type="submit" class="btn btn--primary" id="manualSubBtn" style="white-space: nowrap;">
+                  <span>Aggiungi iscritto</span>
+                </button>
+              </div>
+            </form>
+            <div class="form-feedback" id="manualSubscriberFeedback" role="status"></div>
+          </div>
+
+          <div class="admin-panel">
+            <div class="subscribers-toolbar">
+              <div>
+                <h2 class="admin-panel__title" style="margin-bottom: 0.2rem;">Iscritti agli Avvisi Email</h2>
+                <p class="form-hint" id="subscribersCountLabel">Totale iscritti: 0</p>
+              </div>
+
+              <div style="display: flex; flex-wrap: wrap; gap: 0.65rem;">
+                <button type="button" class="btn btn--secondary btn--sm" id="copyEmailsBtn">
+                  <span>Copia tutte le email</span>
+                </button>
+                <button type="button" class="btn btn--primary btn--sm" id="exportCsvBtn">
+                  <span>Scarica elenco CSV</span>
+                </button>
+              </div>
+            </div>
+
+            <div class="form-feedback" id="subscribersFeedback" role="status" style="margin-bottom: 1rem;"></div>
+
+            <div class="admin-items-list" id="subscribersList">
+              <p>Caricamento iscritti...</p>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+  </main>
+
+  <script type="module" src="js/admin.js"></script>
+</body>
+</html>
